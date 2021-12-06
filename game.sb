@@ -1,0 +1,181 @@
+GraphicsWindow.KeyDown = OnKeyDown
+Timer.Interval = 300
+Timer.Tick = OnTick
+Timer.Pause()
+
+GRID_COLUMNS = 30
+GRID_ROWS = 20
+
+CELL_SIZE = 20
+
+GRID_WIDTH = GRID_COLUMNS * CELL_SIZE
+GRID_HEIGHT = GRID_ROWS * CELL_SIZE
+
+OFFSET = 50
+
+gameRunning = "false"
+
+Sub OnKeyDown
+  If gameRunning = "false" Then
+    StartGame()
+  Else
+    ChangeNextDir()
+  EndIf
+EndSub
+
+Sub OnTick
+  dir = nextDir
+  CheckAppleSnakeCollision()
+  MoveSnake()
+  Update()
+  CheckSnakeCollision()
+EndSub
+
+Sub SetupGraphicsWindow
+  GraphicsWindow.Clear()
+  GraphicsWindow.Width = GRID_WIDTH + 2 * OFFSET
+  GraphicsWindow.Height = GRID_HEIGHT + 2 * OFFSET
+  GraphicsWindow.Title = "Snake"
+  
+  GraphicsWindow.Show()
+EndSub
+
+Sub Update
+  GraphicsWindow.Clear()
+  
+  DrawGrid()
+  DrawApple()
+  DrawSnake()
+EndSub
+
+Sub ChangeNextDir
+  If GraphicsWindow.LastKey = "Down" Then
+    temp["x"] = 0
+    temp["y"] = 1
+  ElseIf GraphicsWindow.LastKey = "Up" Then
+    temp["x"] = 0
+    temp["y"] = -1
+  ElseIf GraphicsWindow.LastKey = "Right" Then
+    temp["x"] = 1
+    temp["y"] = 0
+  ElseIf GraphicsWindow.LastKey = "Left" Then
+    temp["x"] = -1
+    temp["y"] = 0
+  EndIf
+  
+  If temp["x"] <> -dir["x"] Or temp["y"] <> -dir["y"] Then
+    nextDir = temp
+  EndIf
+EndSub
+
+Sub DrawGrid
+  GraphicsWindow.PenColor = "Black"
+  
+  For i = 0 To GRID_ROWS
+    y = i * CELL_SIZE + OFFSET
+    GraphicsWindow.DrawLine(OFFSET, y, GRID_WIDTH + OFFSET, y)
+  EndFor
+  
+  For i = 0 To GRID_COLUMNS
+    x = i * CELL_SIZE + OFFSET
+    GraphicsWindow.DrawLine(x, OFFSET, x, GRID_HEIGHT + OFFSET)
+  EndFor
+EndSub
+
+Sub DrawSnake
+  GraphicsWindow.PenColor = "Green"
+  GraphicsWindow.BrushColor = "Green"
+  
+  For i = 0 To Array.GetItemCount(snake) - 1
+    x = snake[i]["x"] * CELL_SIZE + OFFSET
+    y = snake[i]["y"] * CELL_SIZE + OFFSET
+    GraphicsWindow.FillRectangle(x, y, CELL_SIZE, CELL_SIZE)
+  EndFor
+EndSub
+
+Sub DrawApple
+  GraphicsWindow.PenColor = "Red"
+  GraphicsWindow.BrushColor = "Red"
+  
+  x = apple["x"] * CELL_SIZE + OFFSET
+  y = apple["y"] * CELL_SIZE + OFFSET
+  GraphicsWindow.FillRectangle(x, y, CELL_SIZE, CELL_SIZE)
+EndSub
+
+Sub MoveSnake
+  head = snake[0]
+  newHead["x"] = Math.Remainder(head["x"] + dir["x"] + GRID_COLUMNS, GRID_COLUMNS)
+  newHead["y"] = Math.Remainder(head["y"] + dir["y"] + GRID_ROWS, GRID_ROWS)
+  
+  For i = Array.GetItemCount(snake) - 2 To 0 Step -1
+    snake[i + 1] = snake[i]
+  EndFor
+  
+  snake[0] = newHead
+EndSub
+
+Sub CheckAppleSnakeCollision
+  snakeLength = Array.GetItemCount(snake) 
+  For i = 0 To snakeLength - 1
+    If snake[i]["x"] = apple["x"] And snake[i]["y"] = apple["y"] Then
+      SpawnApple()
+      
+      snake[snakeLength]["x"] = 0
+      snake[snakeLength]["y"] = 0 
+      
+      Goto AfterFor
+    EndIf
+  EndFor
+  AfterFor:
+EndSub
+
+Sub CheckSnakeCollision
+  head = snake[0]
+  
+  For i = 1 To Array.GetItemCount(snake) - 1
+    If snake[i]["x"] = head["x"] And snake[i]["y"] = head["y"] Then
+      StopGame()
+    EndIf
+  EndFor
+EndSub
+
+Sub SpawnApple
+  x = Math.GetRandomNumber(GRID_COLUMNS) - 1
+  y = Math.GetRandomNumber(GRID_ROWS) - 1
+  
+  apple["x"] = x
+  apple["y"] = y
+EndSub
+
+Sub StopGame
+  Timer.Pause()
+  gameRunning = "false"
+  
+  snake = ""
+  
+  GraphicsWindow.DrawText(50, 1, "You lost. Press any button to start again!")
+EndSub
+
+Sub StartGame
+  gameRunning = "true"
+  Timer.Resume()
+  
+  snake[2]["x"] = 0
+  snake[2]["y"] = 0
+  snake[1]["x"] = 1
+  snake[1]["y"] = 0
+  snake[0]["x"] = 2
+  snake[0]["y"] = 0
+
+  dir["x"] = 1
+  dir["y"] = 0
+
+  nextDir["x"] = 1
+  nextDir["y"] = 0
+  
+  SetupGraphicsWindow()
+  SpawnApple()
+  Update()
+EndSub
+
+StartGame()
